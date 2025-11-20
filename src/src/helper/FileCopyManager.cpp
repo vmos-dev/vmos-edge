@@ -1,4 +1,4 @@
-#include "filecopymanager.h"
+#include "FileCopyManager.h"
 #include "filecopyworker.h"
 #include <QThread>
 #include <QDebug>
