@@ -8,6 +8,7 @@ FluPopup {
     id: root
     implicitWidth: 480
     padding: 0
+    focus: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
     property var modelData: null
     property int maxPhones: 16
@@ -187,6 +188,7 @@ FluPopup {
 
             FluComboBox {
                 id: languageComboBox
+                Layout.fillWidth: true
                 editable: true
                 model: ListModel {
                     ListElement { languageCode: "en"; displayText: qsTr("英语"); country: "US" }

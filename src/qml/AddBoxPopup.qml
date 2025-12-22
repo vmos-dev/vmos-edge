@@ -8,6 +8,7 @@ FluPopup {
     implicitWidth: 420
     implicitHeight: 350
     padding: 0
+    focus: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     signal addHost(string ips)

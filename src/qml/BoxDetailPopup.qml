@@ -10,6 +10,7 @@ FluPopup {
     implicitWidth: 600
     padding: 20
     spacing: 15
+    focus: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
     property string hostIp: ""
     property var hostData: null

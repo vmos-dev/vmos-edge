@@ -8,6 +8,7 @@ FluPopup {
     id: root
     implicitWidth: 480
     padding: 0
+    focus: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
     property var modelData: null
     property int maxPhones: 16
@@ -335,12 +336,9 @@ FluPopup {
                         const map = root.brandModelData || {};
                         if (currentText && map[currentText]) {
                             modelComboBox.model = map[currentText]
-                            // 默认选择第一个机型
-                            if (modelComboBox.model.length > 0) {
-                                modelComboBox.currentIndex = 0
-                            } else {
-                                modelComboBox.currentIndex = -1
-                            }
+                            modelComboBox.currentIndex = -1
+                            modelComboBox.currentIndex = 0
+                            root.currentDeviceBrand = brandComboBox.currentText
                         } else {
                             modelComboBox.model = []
                             modelComboBox.currentIndex = -1
@@ -353,7 +351,7 @@ FluPopup {
                 }
 
                 FluText { 
-                    text: qsTr("机型"); 
+                    text: qsTr("机型");
                     font.bold: true 
                 }
                 
@@ -361,6 +359,9 @@ FluPopup {
                     id: modelComboBox
                     Layout.fillWidth: true
                     model: []
+                    onCurrentTextChanged: {
+                        root.currentDeviceModel = modelComboBox.currentText
+                    }
                 }
             }
 
@@ -603,12 +604,13 @@ FluPopup {
                         var selectedBrand = brandComboBox.currentText;
                         var selectedModel = modelComboBox.currentText;
                         // 从模板获取真实的 ADI 文件名和密码
-                        adiName = getAdiNameFromTemplate(selectedBrand, selectedModel)
-                        adiPass = getPwdFromTemplate(selectedBrand, selectedModel)
+                        var adiItem = getAdiItem(androidVersion, selectedBrand, selectedModel)
+                        adiName = adiItem.name
+                        adiPass = adiItem.pwd
                         console.log("[升级云机] 指定机型:", selectedBrand, selectedModel, "adiName=", adiName, "adiPass=", adiPass ? "***" : "")
-                        if (!isAdiExists(selectedBrand, selectedModel)) {
+                        if (!isAdiFileExists(adiName)) {
                             needUploadAdi = true;
-                            adiPath = getAdiPathFromTemplate(selectedBrand, selectedModel);
+                            adiPath = adiName
                             // 若模板仅返回文件名，拼接到可执行目录/adi
                             if (adiPath && adiPath.indexOf('/') === -1 && adiPath.indexOf('\\') === -1) {
                                 adiPath = FluTools.getApplicationDirPath() + "/adi/" + adiPath
@@ -624,7 +626,7 @@ FluPopup {
                         }
                     } else if (defaultTpl && adiName) {
                         // 从默认模板获取密码
-                        adiPass = defaultTpl.pwd || getPwdFromTemplate(defaultTpl.brand, defaultTpl.model)
+                        adiPass = defaultTpl.pwd
                         needUploadAdi = root.downloadedAdiList.indexOf(adiName) === -1
                         if (needUploadAdi) {
                             adiPath = defaultTpl.filePath || (FluTools.getApplicationDirPath() + "/adi/" + adiName)
@@ -1078,51 +1080,6 @@ FluPopup {
         return root.downloadedAdiList.indexOf(adiName) !== -1
     }
 
-    function isAdiExists(brand, model) {
-        var adiName = getAdiNameFromTemplate(brand, model)
-        return isAdiFileExists(adiName)
-    }
-
-    function getAdiPathFromTemplate(brand, model) {
-        for (var i = 0; i < tempLateModel.rowCount(); i++) {
-            var index = tempLateModel.index(i, 0);
-            var templateBrand = tempLateModel.data(index, TemplateModel.BrandRole).toString();
-            var templateModel = tempLateModel.data(index, TemplateModel.ModelRole).toString();
-            var name = tempLateModel.data(index, TemplateModel.NameRole).toString();
-            
-            if (templateBrand === brand && templateModel === model) {
-                return name;
-            }
-        }
-        return "";
-    }
-
-    function getAdiNameFromTemplate(brand, model) {
-        for (var i = 0; i < tempLateModel.rowCount(); i++) {
-            var index = tempLateModel.index(i, 0);
-            var templateBrand = tempLateModel.data(index, TemplateModel.BrandRole).toString();
-            var templateModel = tempLateModel.data(index, TemplateModel.ModelRole).toString();
-            var name = tempLateModel.data(index, TemplateModel.NameRole).toString();
-            if (templateBrand === brand && templateModel === model) {
-                return name;
-            }
-        }
-        return "";
-    }
-
-    function getPwdFromTemplate(brand, model) {
-        for (var i = 0; i < tempLateModel.rowCount(); i++) {
-            var index = tempLateModel.index(i, 0);
-            var templateBrand = tempLateModel.data(index, TemplateModel.BrandRole).toString();
-            var templateModel = tempLateModel.data(index, TemplateModel.ModelRole).toString();
-            var pwd = tempLateModel.data(index, TemplateModel.PwdRole).toString();
-            if (templateBrand === brand && templateModel === model) {
-                return pwd;
-            }
-        }
-        return "";
-    }
-
     function updateBrandModelFromTemplate() {
         try {
             // 从 templateModel 获取品牌和机型数据
@@ -1260,7 +1217,12 @@ FluPopup {
                 try {
                     var res = JSON.parse(result);
                     if(res.code === 200 && res.data){
-                        if (Array.isArray(res.data.files)) {
+                        if (Array.isArray(res.data.list)) {
+                            root.downloadedAdiList = res.data.list.map(function(item){
+                                return item.adiName
+                            })
+                        }
+                        else if (Array.isArray(res.data.files)) {
                             root.downloadedAdiList = res.data.files.slice();
                         } else if (Array.isArray(res.data)) {
                             root.downloadedAdiList = res.data.map(function(item){
@@ -1326,63 +1288,28 @@ FluPopup {
         .go(importAdi)
     }
 
-    // 获取云机当前品牌和机型
+    //  获取品牌机型回调（DB）
     NetworkCallable {
-        id: getDeviceBrandModel
+        id: getDBBrandModel
         onError:
             (status, errorString, result, userData) => {
-                console.debug("[升级云机] 获取品牌机型失败:", status, errorString, result)
-                // 失败不影响功能，静默处理
+                console.debug("[云机详情] DB获取品牌机型失败:", status, errorString, result)
             }
         onSuccess:
             (result, userData) => {
                 try {
                     var res = JSON.parse(result)
                     if(res.code === 200){
-                        var type = userData && userData.type ? userData.type : ""  // "brand" 或 "model"
-                        var value = ""
-                        
-                        // 根据实际返回格式，品牌和机型信息在 data.message 字段中
-                        // 返回格式：{"code":200,"data":{"message":"samsung",...},"msg":"success"}
-                        if (res.data && res.data.message) {
-                            value = res.data.message.toString().trim()
-                        } else if (res.data && res.data.output) {
-                            // 兼容从 output 中提取值
-                            value = res.data.output.toString().trim()
-                        } else if (res.data && typeof res.data === 'string') {
-                            // 如果 data 直接是字符串
-                            value = res.data.toString().trim()
-                        } else if (res.data && res.data.value) {
-                            // 如果返回格式是 {"value": "..."}
-                            value = res.data.value.toString().trim()
-                        } else if (res.msg) {
-                            value = res.msg.toString().trim()
+                        if (res.data.count > 0 && Array.isArray(res.data.list)) {
+                            root.currentDeviceBrand = res.data.list[0].brand
+                            root.currentDeviceModel = res.data.list[0].model_name
+                            selectBrandAndModel(root.currentDeviceBrand, root.currentDeviceModel)
                         }
-                        
-                        // 清理值（移除可能的引号、方括号等）
-                        value = value.replace(/^\[|\]$/g, "").replace(/^"|"$/g, "").trim()
-                        
-                        if (value) {
-                            if (type === "brand") {
-                                root.currentDeviceBrand = value
-                                console.log("[升级云机] 获取到品牌:", value)
-                            } else if (type === "model") {
-                                root.currentDeviceModel = value
-                                console.log("[升级云机] 获取到机型:", value)
-                            }
-                            
-                            // 如果品牌和机型都已获取到，尝试选中
-                            if (root.currentDeviceBrand && root.currentDeviceModel) {
-                                console.log("[升级云机] 获取到完整品牌和机型:", root.currentDeviceBrand, root.currentDeviceModel)
-                                // 如果品牌和机型列表已加载，立即尝试选中
-                                if (typeof brandComboBox !== 'undefined' && typeof modelComboBox !== 'undefined') {
-                                    selectBrandAndModel(root.currentDeviceBrand, root.currentDeviceModel)
-                                }
-                            }
-                        }
+                    } else {
+                        console.error("[云机详情] 请求品牌机型数据响应失败：", res.msg)
                     }
                 } catch (e) {
-                    console.error("[升级云机] 解析品牌机型数据失败:", e)
+                    console.error("[云机详情] 解析品牌机型数据失败:", e)
                 }
             }
     }
@@ -1395,6 +1322,10 @@ FluPopup {
             // 查找品牌在列表中的索引
             var brandIndex = root.brandModel.indexOf(brand)
             if (brandIndex >= 0 && typeof brandComboBox !== 'undefined') {
+                if (brandComboBox.currentIndex === brandIndex) {
+                    brandComboBox.currentIndex = -1
+                }
+
                 brandComboBox.currentIndex = brandIndex
                 // currentIndex 改变会触发 onCurrentTextChanged，自动更新机型列表
                 
@@ -1437,22 +1368,32 @@ FluPopup {
             console.warn("[升级云机] 获取品牌机型: hostIp 或 dbId 为空")
             return
         }
-        
-        // 分别获取品牌和机型
-        // 先获取品牌
-        console.log("[升级云机] 请求获取品牌:", hostIp, dbId)
-        Network.postJson(`http://${hostIp}:18182/android_api/v1/shell/${dbId}`)
-        .add("cmd", "getprop ro.product.brand")
-        .setUserData({hostIp: hostIp, dbId: dbId, type: "brand"})
+
+        Network.postJson(`http://${hostIp}:18182/container_api/v1/get_db`)
+        .add("name", dbId)
+        .add("fields", "brand,model_name")
         .bind(root)
-        .go(getDeviceBrandModel)
-        
-        // 再获取机型
-        console.log("[升级云机] 请求获取机型:", hostIp, dbId)
-        Network.postJson(`http://${hostIp}:18182/android_api/v1/shell/${dbId}`)
-        .add("cmd", "getprop ro.product.model")
-        .setUserData({hostIp: hostIp, dbId: dbId, type: "model"})
-        .bind(root)
-        .go(getDeviceBrandModel)
+        .go(getDBBrandModel)
+    }
+
+    //  获取adi项
+    function getAdiItem(inVersion, inBrand, inModelName) {
+        for (var i = 0; i < tempLateModel.rowCount(); i++) {
+            var index = tempLateModel.index(i, 0);
+            var tempBrand = tempLateModel.data(index, TemplateModel.BrandRole).toString();
+            var tempModel = tempLateModel.data(index, TemplateModel.ModelRole).toString();
+            var tempVersion = tempLateModel.data(index, TemplateModel.AsopVersionRole).toString();
+            if (tempBrand === inBrand && tempModel === inModelName && tempVersion === inVersion) {
+                return {
+                    brand: tempBrand,
+                    model: tempModel,
+                    version: tempVersion,
+                    name: tempLateModel.data(index, TemplateModel.NameRole).toString(),
+                    layout: tempLateModel.data(index, TemplateModel.LayoutRole).toString(),
+                    pwd: tempLateModel.data(index, TemplateModel.PwdRole).toString()
+                };
+            }
+        }
+        return "";
     }
 }

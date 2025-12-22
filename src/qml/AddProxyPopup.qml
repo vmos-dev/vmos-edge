@@ -8,6 +8,7 @@ FluPopup {
     implicitWidth: 420
     implicitHeight: 550
     padding: 0
+    focus: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     property string phoneName: "AC4513165321156"

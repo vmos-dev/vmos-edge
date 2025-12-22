@@ -534,8 +534,8 @@ FluWindow {
     RenamePopup{
         id: renameDialog
         title: qsTr("重命名")
-        // property string inputName: ""
-        // property bool number: false
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         onAboutToShow: {
             renameDialog.inputName = ""
@@ -552,6 +552,8 @@ FluWindow {
         z: 100
         property bool checked: false
         property bool showPrompt: false
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         contentDelegate: showPrompt ? promptCompontent : null
 
@@ -745,7 +747,7 @@ FluWindow {
             text:qsTr("删除云机")
             onClicked: {
                 let podList = proxyModel.getPadList()
-                if(!checkAtLeastOne(podList, 4)){
+                if(!checkAtLeastOne(podList, 0)){           //  fix：支持删除“创建中”状态的云机
                     return
                 }
 
@@ -924,19 +926,26 @@ FluWindow {
             }
         }
 
-        //  TODO 批量安装
-        // FluMenuItem{
-        //     text:qsTr("批量安装")
-        //     onClicked: {
-        //         let podList = proxyModel.getPadList()
-        //         if(!checkAtLeastOne(podList, 1)){
-        //             return
-        //         }
+        //  批量安装
+        FluMenuItem{
+            text:qsTr("安装应用")
+            onClicked: {
+                let podList = proxyModel.getPadList()
+                if(!checkAtLeastOne(podList, 1)){
+                    return
+                }
 
-        //         batchInstallPopup.selectedDeviceList = podList
-        //         batchInstallPopup.open()
-        //     }
-        // }
+                const groups = podList.reduce(
+                                 (acc, item) => {
+                                     const key = item.hostIp;
+                                     if (!acc[key]) acc[key] = [];
+                                     acc[key].push(item.dbId);
+                                     return acc;
+                                 }, {});
+                batchInstallPopup.tobeInstallList = groups
+                batchInstallPopup.open()
+            }
+        }
     }
 
     // 设备排序
@@ -1519,7 +1528,15 @@ FluWindow {
                                 spacing: 2
 
                                 Text {
-                                    text: modelData?.networkMode === "macvlan" ? `${modelData?.ip ?? ""}:5555` : `${modelData?.hostIp ?? ""}:${modelData?.adb ?? ""}`
+                                    id: adbAddress
+                                    text: {
+                                        if (modelData.networkMode === "macvlan") {
+                                            if (modelData.state !== "running") {
+                                                return "-"
+                                            }
+                                        }
+                                        return modelData?.networkMode === "macvlan" ? `${modelData?.ip ?? ""}:5555` : `${modelData?.hostIp ?? ""}:${modelData?.adb ?? ""}`
+                                    }
                                     font.pixelSize : 12
                                     color: "#888"
 
@@ -1527,8 +1544,7 @@ FluWindow {
                                         anchors.fill: parent
 
                                         onClicked: {
-                                            const copyText = modelData?.networkMode === "macvlan" ? `${modelData?.ip ?? ""}:5555` : `${modelData?.hostIp ?? ""}:${modelData?.adb ?? ""}`
-                                            FluTools.clipText(copyText)
+                                            FluTools.clipText(adbAddress.text)
                                             showSuccess(qsTr("复制成功"))
                                         }
                                     }
@@ -1637,7 +1653,7 @@ FluWindow {
 
         FluMenuItem{
             text:qsTr("删除云机")
-            visible: deviceContextMenu.currentModel ? (deviceContextMenu.currentModel.state !== "creating") : false
+            visible: deviceContextMenu.currentModel ? true : false
             onClicked: {
                 dialog.title = qsTr("操作确认")
                 dialog.message = qsTr("删除云机将清除云手机及其所有数据，操作后无法恢复，请谨慎操作！")
@@ -2201,6 +2217,10 @@ FluWindow {
                                         placeholderText: qsTr("请输入云机名称、IP")
                                         onSearchTextChanged: function(text) {
                                             treeProxyModel.searchFilter = filterTextField.text
+                                        }
+                                        onSearchTextFinished: {
+                                            //  中文输入或粘贴时，需再次输入回车才能触发
+                                            treeProxyModel.searchFilterChanged()
                                         }
                                     }
 

@@ -9,6 +9,7 @@ FluPopup {
     implicitWidth: 500
     padding: 20
     spacing: 15
+    focus: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
     property var modelData: null
     property string deviceBrand: ""  // 品牌
@@ -101,23 +102,13 @@ FluPopup {
             console.warn("[云机详情] 获取品牌机型: hostIp 或 dbId 为空")
             return
         }
-        
-        // 分别获取品牌和机型
-        // 先获取品牌
-        console.log("[云机详情] 请求获取品牌:", hostIp, dbId)
-        Network.postJson(`http://${hostIp}:18182/android_api/v1/shell/${dbId}`)
-        .add("cmd", "getprop ro.product.brand")
-        .setUserData({hostIp: hostIp, dbId: dbId, type: "brand"})
+
+        // console.log("[云机详情] 请求获取品牌:", hostIp, dbId)
+        Network.postJson(`http://${hostIp}:18182/container_api/v1/get_db`)
+        .add("name", dbId)
+        .add("fields", "brand,model_name")
         .bind(root)
-        .go(getDeviceBrandModel)
-        
-        // 再获取机型
-        console.log("[云机详情] 请求获取机型:", hostIp, dbId)
-        Network.postJson(`http://${hostIp}:18182/android_api/v1/shell/${dbId}`)
-        .add("cmd", "getprop ro.product.model")
-        .setUserData({hostIp: hostIp, dbId: dbId, type: "model"})
-        .bind(root)
-        .go(getDeviceBrandModel)
+        .go(getDBBrandModel)
     }
 
     // 修改局域网络
@@ -158,47 +149,24 @@ FluPopup {
         .go(updateMacvlanCallback)
     }
 
-    // 获取品牌和机型回调
+    //  获取品牌机型回调（DB）
     NetworkCallable {
-        id: getDeviceBrandModel
+        id: getDBBrandModel
         onError:
             (status, errorString, result, userData) => {
-                console.debug("[云机详情] 获取品牌机型失败:", status, errorString, result)
-                // 失败不影响功能，静默处理
+                console.debug("[云机详情] DB获取品牌机型失败:", status, errorString, result)
             }
         onSuccess:
             (result, userData) => {
                 try {
                     var res = JSON.parse(result)
                     if(res.code === 200){
-                        var type = userData && userData.type ? userData.type : ""  // "brand" 或 "model"
-                        var value = ""
-                        
-                        // 根据实际返回格式，品牌和机型信息在 data.message 字段中
-                        if (res.data && res.data.message) {
-                            value = res.data.message.toString().trim()
-                        } else if (res.data && res.data.output) {
-                            value = res.data.output.toString().trim()
-                        } else if (res.data && typeof res.data === 'string') {
-                            value = res.data.toString().trim()
-                        } else if (res.data && res.data.value) {
-                            value = res.data.value.toString().trim()
-                        } else if (res.msg) {
-                            value = res.msg.toString().trim()
+                        if (res.data.count > 0 && Array.isArray(res.data.list)) {
+                            root.deviceBrand = res.data.list[0].brand
+                            root.deviceModel = res.data.list[0].model_name
                         }
-                        
-                        // 清理值（移除可能的引号、方括号等）
-                        value = value.replace(/^\[|\]$/g, "").replace(/^"|"$/g, "").trim()
-                        
-                        if (value) {
-                            if (type === "brand") {
-                                root.deviceBrand = value
-                                console.log("[云机详情] 获取到品牌:", value)
-                            } else if (type === "model") {
-                                root.deviceModel = value
-                                console.log("[云机详情] 获取到机型:", value)
-                            }
-                        }
+                    } else {
+                        console.error("[云机详情] 请求品牌机型数据响应失败：", res.msg)
                     }
                 } catch (e) {
                     console.error("[云机详情] 解析品牌机型数据失败:", e)
@@ -458,16 +426,24 @@ FluPopup {
                     horizontalAlignment: Text.AlignRight
                 }
                 FluText {
-                    text: modelData?.networkMode === "macvlan" ? `${modelData?.ip ?? ""}:5555` : `${modelData?.hostIp ?? ""}:${modelData?.adb ?? ""}`
+                    id: adbAddress
+                    text: {
+                        if (modelData?.networkMode === "macvlan") {
+                            if (modelData?.state !== "running") {
+                                return "-"
+                            }
+                        }
+                        return modelData?.networkMode === "macvlan" ? `${modelData?.ip ?? ""}:5555` : `${modelData?.hostIp ?? ""}:${modelData?.adb ?? ""}`
+                    }
+
                     Layout.fillWidth: true
 
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            var textToCopy = modelData?.networkMode === "macvlan" ? `${modelData?.ip ?? ""}:5555` : `${modelData?.hostIp ?? ""}:${modelData?.adb ?? ""}`
-                            if (textToCopy) {
-                                FluTools.clipText(textToCopy)
+                            if (adbAddress.text) {
+                                FluTools.clipText(adbAddress.text)
                                 showSuccess(qsTr("复制成功"))
                             }
                         }

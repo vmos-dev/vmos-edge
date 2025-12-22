@@ -12,13 +12,13 @@ QtObject  {
     // 终端
     property string client: FluTools.isMacos() ? "mac" : FluTools.isLinux() ? "linux" : "win"
     // 版本
-    property int versionCode: 100000035
+    property int versionCode: 100000036
     // 版本
 
-    property string versionName: "1.0.35.4"
+    property string versionName: "1.0.36.7"
     // CBS版本信息
     property string cbsConfigPath: FluTools.getApplicationDirPath() + "/cbs/cbs_config.json"
-    property string cbsVersion: "1.0.12.10.6"
+    property string cbsVersion: "1.0.12.9.2"
     property string cbsFileName: "latest.cbs"
     property string cbsFilePath: FluTools.getApplicationDirPath() + "/cbs/" + cbsFileName
 

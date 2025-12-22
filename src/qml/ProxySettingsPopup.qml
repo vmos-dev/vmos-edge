@@ -9,6 +9,7 @@ FluPopup {
     implicitWidth: 420
     padding: 0
     closePolicy: Popup.CloseOnEscape
+    focus: true
     
     property var modelData: null
     property string cloudMachineName: ""
@@ -624,6 +625,7 @@ FluPopup {
         }
         onFinish: {
             hideLoading()
+            root.forceActiveFocus()
         }
         onError:
             (status, errorString, result, userData) => {

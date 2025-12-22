@@ -9,6 +9,7 @@ FluPopup {
     implicitWidth: 600
     implicitHeight: 550
     padding: 0
+    focus: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
     
     property var cameraDeviceScanner: null

@@ -1,8 +1,8 @@
 #include <windows.h>
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,35,4
- PRODUCTVERSION 1,0,35,0
+ FILEVERSION 1,0,36,7
+ PRODUCTVERSION 1,0,36,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -18,12 +18,12 @@ BEGIN
         BLOCK "080404b0"
         BEGIN
             VALUE "CompanyName", "MINICAL INTERNATIONAL LIMITED"
-            VALUE "FileVersion", "1.0.35.4"
+            VALUE "FileVersion", "1.0.36.7"
             VALUE "InternalName", "vmosedge.exe"
             VALUE "LegalCopyright", "MINICAL INTERNATIONAL LIMITED Copyright (C) 2024"
             VALUE "OriginalFilename", "vmosedge.exe"
             VALUE "ProductName", "VMOSEdge"
-            VALUE "ProductVersion", "1.0.35"
+            VALUE "ProductVersion", "1.0.36"
         END
     END
     BLOCK "VarFileInfo"

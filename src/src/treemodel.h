@@ -69,6 +69,8 @@ public:
     ItemType typeHost() const { return TypeHost; }
     ItemType typeDevice() const { return TypeDevice; }
 
+public:
+    void setSearchFlag(bool searching){m_searching = searching;}
 
 private:
     void initDefaultGroup();
@@ -96,6 +98,11 @@ private:
     QList<GroupData> m_groups;
     QMap<int, QList<HostData>> m_hostsByGroup;
     QMap<QString, QList<DeviceData>> m_devicesByHost;
+
+private:
+    bool m_searching = false;
+
+    bool isSearching()const {return m_searching;}
 };
 
 #endif // TREEMODEL_H

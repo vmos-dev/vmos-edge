@@ -2,7 +2,6 @@
 #include "structs.h"
 #include "treemodel.h"
 #include <QSet>
-#define ONLY_FILTER_DEV     1
 
 TreeProxyModel::TreeProxyModel(QObject *parent)
     : QSortFilterProxyModel(parent)
@@ -117,7 +116,13 @@ void TreeProxyModel::setSearchFilter(const QString &filter) {
     if (m_searchFilter != filter) {
         m_searchFilter = filter;
         emit searchFilterChanged();
-        
+
+        auto real_mode = dynamic_cast<TreeModel*>(sourceModel());
+        if (real_mode)
+        {
+            real_mode->setSearchFlag(true);
+        }
+
         // 根据搜索条件处理设备勾选状态
         if (!m_searchFilter.isEmpty()) {
             // 有搜索条件时，只勾选匹配的设备
@@ -126,7 +131,12 @@ void TreeProxyModel::setSearchFilter(const QString &filter) {
             // 搜索条件为空时，取消所有设备的勾选状态
             clearAllDeviceChecks();
         }
-        
+
+        if (real_mode)
+        {
+            real_mode->setSearchFlag(false);
+        }
+
         invalidateFilter();
     }
 }
@@ -144,33 +154,47 @@ bool TreeProxyModel::filterAcceptsRow(int source_row, const QModelIndex &source_
     // 根据项目类型进行过滤
     switch (itemType) {
     case TreeModel::TypeGroup:
-        // 组节点：如果选中"所有云机"，始终显示分组（即使分组下没有主机）
-        // 否则，只有当组内有匹配的设备时才显示组
-        if (m_showAllDevices) {
+    {
+        if (m_searchFilter.isEmpty())       //  无搜索条件，默认保留分组标签项 2025-12-15
+        {
             return true;
         }
-#if ONLY_FILTER_DEV
-        return true;
-#endif
-        return hasMatchingChildren(sourceIndex);
-        
-    case TreeModel::TypeHost: {
-#if ONLY_FILTER_DEV
-        return true;
-#endif
-        // 主机节点：只有在"运行中云机"模式下才过滤离线主机
-        QString hostState = sourceModel()->data(sourceIndex, DeviceRoles::StateRole).toString();
-        // 如果选中"运行中云机"，隐藏离线主机
-        if (m_showRunningOnly && !m_showAllDevices && hostState == "offline") {
-            return false;
+        else
+        {
+            return hasMatchingChildren(sourceIndex);
         }
-        // 其他情况（"所有云机"模式或在线主机），始终显示主机
-        return true;
     }
-        
-    case TreeModel::TypeDevice: {
+    case TreeModel::TypeHost:
+    {
+        if (m_searchFilter.isEmpty())       //  无搜索条件，默认保留分组标签项 2025-12-15
+        {
+            return true;
+        }
+        else
+        {
+            //  尝试匹配主机IP
+            QString hostIp = sourceModel()->data(sourceIndex, DeviceRoles::HostIpRole).toString();
+            if (hostIp.contains(m_searchFilter))
+            {
+                qDebug() << "m_searchFilter=" << m_searchFilter << " & hostIp=" << hostIp;
+                if (m_showAllDevices)
+                {
+                    return true;
+                }
+
+                QString hostState = sourceModel()->data(sourceIndex, DeviceRoles::StateRole).toString();
+                if (hostState != "offline")
+                {
+                    return true;
+                }
+            }
+            return hasMatchingChildren(sourceIndex);
+        }
+    }
+    case TreeModel::TypeDevice:
+    {
         // 设备节点：检查搜索过滤和状态过滤
-        bool searchMatch = m_searchFilter.isEmpty() || matchesSearchFilter(sourceIndex);
+        bool searchMatch = matchesSearchFilter(sourceIndex);
         bool stateMatch = matchesStateFilter(sourceIndex);
         return searchMatch && stateMatch;
     }
@@ -416,7 +440,8 @@ QVariant TreeProxyModel::data(const QModelIndex &index, int role) const
     // 对于 GroupPadCountRole，返回过滤后的主机数量
     if (role == DeviceRoles::GroupPadCountRole && itemType == TreeModel::TypeGroup) {
         // 如果选中"所有云机"，返回所有主机数量（包括离线主机）
-        if (m_showAllDevices || !m_showRunningOnly) {
+        if (m_showAllDevices && m_searchFilter.isEmpty())
+        {
             return sourceModel()->rowCount(sourceIndex);
         }
         
@@ -428,15 +453,12 @@ QVariant TreeProxyModel::data(const QModelIndex &index, int role) const
             if (!hostIndex.isValid()) {
                 continue;
             }
-#if ONLY_FILTER_DEV
-            visibleHostCount++;
-#else
+
             // 检查主机是否可见（不是离线状态）
-            QString hostState = sourceModel()->data(hostIndex, DeviceRoles::StateRole).toString();
-            if (hostState != "offline") {
+            if (hasMatchingChildren(hostIndex))
+            {
                 visibleHostCount++;
             }
-#endif
         }
         return visibleHostCount;
     }

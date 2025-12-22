@@ -19,6 +19,7 @@ Rectangle {
     property int maximumLength: 0 // 0表示无限制
     
     signal searchTextChanged(string text)
+    signal searchTextFinished(string text)
     signal cleared()
     
     implicitWidth: 280
@@ -54,6 +55,9 @@ Rectangle {
             maximumLength: root.maximumLength > 0 ? root.maximumLength : 32767 // 如果maximumLength为0，则使用默认最大值
             onTextChanged: {
                 root.searchTextChanged(text)
+            }
+            onEditingFinished: {
+                root.searchTextFinished(text)
             }
         }
         

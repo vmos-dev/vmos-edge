@@ -266,16 +266,22 @@ Item{
                             Layout.preferredWidth: deviceListView.width * itemWidth[2] / itemTotalWidth
 
                             FluText{
+                                id: adbAddress
                                 anchors.verticalCenter: parent.verticalCenter
-                                // todo 优化显示格式
-                                text: model?.networkMode === "macvlan" ? `${model?.ip ?? ""}:5555` : `${model?.hostIp ?? ""}:${model?.adb ?? ""}`
+                                text: {
+                                    if (model.networkMode === "macvlan") {
+                                        if (model.state !== "running") {
+                                            return "-"
+                                        }
+                                    }
+                                    return model?.networkMode === "macvlan" ? `${model?.ip ?? ""}:5555` : `${model?.hostIp ?? ""}:${model?.adb ?? ""}`
+                                }
 
                                 MouseArea{
                                     anchors.fill: parent
 
                                     onClicked: {
-                                        // todo 优化显示格式
-                                        FluTools.clipText(model?.networkMode === "macvlan" ? `${model?.ip ?? ""}:5555` : `${model?.hostIp ?? ""}:${modelData?.adb ?? ""}`)
+                                        FluTools.clipText(adbAddress.text)
                                         showSuccess(qsTr("复制成功"))
                                     }
                                 }

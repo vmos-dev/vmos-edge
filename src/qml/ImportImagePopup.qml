@@ -10,6 +10,7 @@ FluPopup {
     id: root
     implicitWidth: 600
     padding: 0
+    focus: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     property string filePath: ""

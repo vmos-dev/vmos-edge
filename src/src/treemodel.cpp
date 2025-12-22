@@ -2010,8 +2010,8 @@ void TreeModel::checkDevice(const QString& dbId, bool checked, bool updateParent
             qWarning() << "Could not find index for device:" << dbId;
         }
     }
-    
-    if(deviceIndex.isValid()){
+
+    if(deviceIndex.isValid() && !isSearching()){
         emit dataChanged(deviceIndex, deviceIndex, {CheckedRole});
         if(updateParents){
             QModelIndex hostIndex = parent(deviceIndex);

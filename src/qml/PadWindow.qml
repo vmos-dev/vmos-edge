@@ -326,6 +326,8 @@ FluWindow {
             
             // 设置连接状态为未连接
             root.isConnect = false
+            deviceManager.setUserData(root.deviceSerial, null)
+            deviceManager.deRegisterObserver(root.deviceSerial)
             
             dialog.title = qsTr("系统提示")
             dialog.message = qsTr("连接已断开，请稍后重连")
@@ -535,6 +537,7 @@ FluWindow {
                             Network.postForm(url)
                             .add("db_ids", dbId)  // 实例ID列表，支持单个或多个（逗号分隔）
                             .addFile("file", localPath)  // APK文件
+                            .setTimeout(3600000)
                             .bind(root)
                             .go(installApk)
                         }
@@ -1025,6 +1028,7 @@ FluWindow {
                                                              Network.postForm(`http://${hostIp}:18182/android_api/v1/upload_file_android_batch`)
                                                              .add("db_ids", dbId)  // 实例ID列表，支持单个或多个（逗号分隔）
                                                              .addFile("file", localPath)  // APK文件
+                                                             .setTimeout(3600000)
                                                              .bind(root)
                                                              .go(installApk)
                                                          }
@@ -1165,15 +1169,22 @@ FluWindow {
                             }
                             FluText{
                                 id: textHostIp
-                                // todo 优化显示格式
-                                text: root.argument.networkMode === "macvlan" ? `${root.argument.ip ?? ""}:5555` : `${root.argument.hostIp ?? ""}:${root.argument.adb ?? ""}`
+                                text: {
+                                    if (root.argument.networkMode === "macvlan"){
+                                        if (root.argument.state !== "running"){
+                                            return "-"
+                                        }
+                                    }
+                                    return root.argument.networkMode === "macvlan" ? `${root.argument.ip ?? ""}:5555` : `${root.argument.hostIp ?? ""}:${root.argument.adb ?? ""}`
+                                }
+
                                 textColor: "#FFB7BCCC"
                                 font.pixelSize: 10
 
                                 MouseArea{
                                     anchors.fill: parent
                                     onClicked: {
-                                        FluTools.clipText(root.argument.networkMode === "macvlan" ? `${root.argument.ip ?? ""}:5555` : `${root.argument.hostIp ?? ""}:${root.argument.adb ?? ""}`)
+                                        FluTools.clipText(textHostIp.text)
                                         showSuccess(qsTr("复制成功"))
                                     }
                                 }
@@ -2468,7 +2479,24 @@ FluWindow {
             console.log("APK安装成功，返回结果:", result)
             const res = JSON.parse(result)
             if(res.code === 200){
-                showSuccess(qsTr("安装成功"))
+               if (Array.isArray(res.data.list)) {
+                   var errString = ""
+                   for (let i = 0; i < res.data.list.length; i++) {
+                       var item = res.data.list[i]
+                       var info = qsTr("%1:%2").arg(item.db_id).arg(item.msg)
+                       if ("0" === item.code) {
+                           errString += info + "\n"
+                       }
+                   }
+
+                   if ("" === errString) {
+                       showSuccess(qsTr("安装成功"))
+                   } else {
+                       showError(errString)
+                   }
+               } else {
+                   showError(res.msg)
+               }
             } else {
                 showError(res.msg || qsTr("安装失败"))
             }

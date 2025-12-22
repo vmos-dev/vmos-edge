@@ -19,6 +19,7 @@ FluPopup {
     id: root
     implicitWidth: 480
     padding: 0
+    focus: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     onClosed: {

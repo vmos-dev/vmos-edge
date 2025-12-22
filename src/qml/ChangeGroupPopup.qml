@@ -11,6 +11,8 @@ FluPopup {
     leftPadding: 0
     rightPadding: 0
     bottomPadding: 0
+    focus: true
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     property var podIdList: []
     property var groupModel: null

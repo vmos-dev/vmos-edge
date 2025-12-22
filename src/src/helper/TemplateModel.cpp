@@ -215,6 +215,8 @@ void TemplateModel::setFilePath(const QString& filePath)
 
 void TemplateModel::saveConfig()
 {
+    //  模板只读，不需要保存
+    return;
     QJsonArray jsonArray;
 
     for (const TemplateItem& item : m_items) {
@@ -297,7 +299,7 @@ void TemplateModel::loadConfig()
 
         TemplateItem item;
         item.brand = readWithAliases(jsonObj, {"brand", "brandName", "manufacturer"});
-        item.model = readWithAliases(jsonObj, {"model", "deviceModel", "device", "modelName"});
+        item.model = readWithAliases(jsonObj, {"model_name", "model", "deviceModel", "device", "modelName"});
         item.layout = readWithAliases(jsonObj, {"layout", "layoutName"});
         item.name = readWithAliases(jsonObj, {"name", "templateName", "displayName", "title"});
         item.filePath = readWithAliases(jsonObj, {"filePath", "path", "file", "layoutPath"});
@@ -315,7 +317,6 @@ void TemplateModel::loadConfig()
         if (item.updateTime.isEmpty()) {
             item.updateTime = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
         }
-
         m_items.append(item);
     }
 

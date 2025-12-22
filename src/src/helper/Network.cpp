@@ -259,7 +259,10 @@ void Network::handle(NetworkParams *params, NetworkCallable *c) {
                 if (params->_type == NetworkParams::TYPE_JSON) {
                     response = QString::fromUtf8(reply->property("accumulatedBody").toByteArray());
                 } else {
-                    if (reply->isOpen()) {
+                    if (params->_type == NetworkParams::TYPE_FORM) {
+                        response = QString::fromUtf8(reply->property("accumulatedBody").toByteArray());
+                    }
+                    else if (reply->isOpen()) {
                         response = QString::fromUtf8(reply->readAll());
                     }
                 }
