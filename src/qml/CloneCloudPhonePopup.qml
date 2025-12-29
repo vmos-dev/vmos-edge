@@ -62,8 +62,8 @@ FluPopup {
 
     function validateName(name){
         name = name.trim()
-        if (name.length < 2 || name.length > 36) {
-            showError(qsTr("长度限制：2-36字符"))
+        if (name.length < 2 || name.length > 200) {
+            showError(qsTr("长度限制：2-200字符"))
             return ""
         }
         if (/[^a-zA-Z0-9_.-]/.test(name)) {
@@ -186,7 +186,7 @@ FluPopup {
                     Layout.fillWidth: true
                     text: "vmos"
                     placeholderText: qsTr("请输入克隆名称")
-                    maximumLength: 11
+                    maximumLength: 190
                 }
             }
 
@@ -259,6 +259,8 @@ FluPopup {
                                 // 服务器端会在名称后添加 "-clone" 后缀
                                 return baseName + "-clone" + suffix 
                             }
+                            elide: Text.ElideMiddle
+                            width: Math.min(200, implicitWidth)
                         }
                     }
                 }

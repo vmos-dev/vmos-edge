@@ -418,8 +418,8 @@ FluPopup {
 
     function validateName(name){
         name = name.trim()
-        if (name.length < 2 || name.length > 40) {
-            showError(qsTr("长度限制：2-40字符"))
+        if (name.length < 2 || name.length > 200) {
+            showError(qsTr("长度限制：2-200字符"))
             return ""
         }
         if (/[^a-zA-Z0-9_.-]/.test(name)) {
@@ -981,23 +981,9 @@ FluPopup {
                     Layout.fillWidth: true
                     text: "vmos"
                     placeholderText: qsTr("请输入云机名称")
-                    maximumLength: 36
+                    maximumLength: 196
                 }
             }
-
-            // RowLayout{
-            //     Layout.topMargin: 5
-
-            //     FluText {
-            //         text: qsTr("立即启动");
-            //         font.bold: true
-            //     }
-
-            //     Item { Layout.fillWidth: true }
-
-
-            // }
-
 
             ColumnLayout{
                 Layout.topMargin: 5
@@ -1075,6 +1061,8 @@ FluPopup {
                         delegate: FluText{
                             font.pixelSize: 12
                             text: nameInput.text + (phoneCountSpinBox.value > 1 ? `-${(index + 1).toString().padStart(3, '0')}` : "")
+                            elide: Text.ElideMiddle
+                            width: Math.min(200, implicitWidth)
                         }
                     }
                 }
@@ -1632,11 +1620,11 @@ FluPopup {
             (result, userData) => {
                 try {
                     const res = JSON.parse(result)
-                    if(res.code == 200){
+                    if(res.code === 200){
                         // 创建成功
                         root.createResult(res.data.host_ip, res.data.list)
                         root.close()
-                    }else if(res.code == -1){
+                    }else if(res.code === -1){
                         showError("创建任务正在执行中，请稍后再试", 3000)
                         isIdle = true  // 恢复按钮状态
                     }else{
@@ -1723,6 +1711,10 @@ FluPopup {
         onSuccess:
             (result, userData) => {
                 hideLoading()
+                var res = JSON.parse(result)
+                if(res.code !== 200) {
+                    showError(res.msg)
+                }
             }
         onUploadProgress:
             (sent,total)=>{

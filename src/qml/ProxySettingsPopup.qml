@@ -451,7 +451,7 @@ FluPopup {
 
                                 // 协议
                                 var protocol = "socks5"
-                                if("HTTP" == root.proxyProtocols[protocolComboBox.currentIndex] || "HTTPS" == root.proxyProtocols[protocolComboBox.currentIndex]){
+                                if("HTTP" === root.proxyProtocols[protocolComboBox.currentIndex] || "HTTPS" === root.proxyProtocols[protocolComboBox.currentIndex]){
                                     protocol = "http-relay"
                                 }
 
@@ -474,7 +474,7 @@ FluPopup {
                                     batchSetProxies(settings)
                                 } else if (root.modelData) {
                                     // 单个设置代理
-                                    reqSetDeviceProxy(root.modelData.hostIp, root.modelData.dbId, 
+                                    reqSetDeviceProxy(root.modelData.hostIp, root.modelData.dbId, protocol,
                                                      settings.serverAddress, settings.port, 
                                                      settings.account, settings.password, 
                                                      settings.dnsOverProxyDisabled, settings.udpDisabled)
@@ -724,13 +724,13 @@ FluPopup {
     }
 
     // 设置代理
-    function reqSetDeviceProxy(hostIp, dbId, ip, port, account, password, dnsOverProxyDisabled = false, udpDisabled = false){
+    function reqSetDeviceProxy(hostIp, dbId, protocol, ip, port, account, password, dnsOverProxyDisabled = false, udpDisabled = false){
         Network.postJson(`http://${hostIp}:18182/android_api/v1` + "/proxy_set/" + dbId)
         .add("ip", ip)
         .add("port", port)  // 接口要求使用port参数
         .add("account", account)
         .add("password", password)
-        .add("proxyName", "")  // 保留proxyName参数
+        .add("proxyName", protocol)
         .add("dnsOverProxyDisabled", dnsOverProxyDisabled)
         .add("udpDisabled", udpDisabled)
         .setUserData(hostIp)

@@ -847,7 +847,8 @@ void Server::handleConnectSuccess()
     // devices will send 1 byte first on tunnel forward mode
     // 对于TCP直连模式，control socket可能不需要读取第一个字节
     // 因为TCP直连模式类似reverse模式，不需要这个标识字节
-    if (m_tunnelForward && !m_params.useDirectTcp) {
+    //if (m_tunnelForward && !m_params.useDirectTcp) {
+    if (true) {
         // tunnel_forward模式：读取control socket的第一个字节
         if (m_controlSocket->bytesAvailable() > 0) {
             m_controlSocket->read(1);

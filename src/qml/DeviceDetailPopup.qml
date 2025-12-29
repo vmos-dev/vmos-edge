@@ -290,6 +290,7 @@ FluPopup {
                 FluText {
                     text: modelData?.displayName ?? modelData?.name ?? ""
                     Layout.fillWidth: true
+                    elide: Text.ElideMiddle
                     
                     MouseArea {
                         anchors.fill: parent

@@ -44,6 +44,7 @@ FluPopup {
                         background: Item{}
                         echoMode: TextInput.Normal
                         placeholderTextColor: "gray"
+                        maximumLength: 200
                         color: "black"
                         property var numValidator: IntValidator {
                             bottom: 1

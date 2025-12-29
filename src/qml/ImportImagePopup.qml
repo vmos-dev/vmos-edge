@@ -141,18 +141,18 @@ FluPopup {
                 // 检查镜像版本是否已存在
                 if (checkImageVersionExists(imageName, androidVersion)) {
                     hideLoading()
-                    root.failedReason = "镜像版本已存在"
+                    root.failedReason = qsTr("镜像版本已存在")
                     importState = "failed"
                     return
                 }
                 
                 // 没有重复，继续验证过程
                 console.log("No duplicate found, continuing with validation...")
-                showLoading("验证镜像中...")
+                showLoading(qsTr("验证镜像中..."))
                 fileCopyManager.startImageValidation(root.filePath)
             } else {
                 hideLoading()
-                root.failedReason = errorMessage || "镜像信息提取失败"
+                root.failedReason = errorMessage || qsTr("镜像信息提取失败")
                 importState = "failed"
             }
         }

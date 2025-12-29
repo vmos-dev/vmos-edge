@@ -524,41 +524,27 @@ FluWindow {
 
                             if (actionType === "apk") {
                                 // APK 安装按钮：安装 APK 或 XAPK 文件
-                                if (lower.endsWith(".apk")) {
-                        const hostIp = root.argument.hostIp || ""
-                        const dbId = root.argument.dbId || ""
-                        const serial = root.deviceSerial || ""
-                        console.log("开始安装APK，设备信息:", {hostIp, dbId, serial, fileName})
-                        if(hostIp && dbId){
-                            showLoading(qsTr("安装中..."))
-                            // 使用新的批量安装APK接口
-                            const url = `http://${hostIp}:18182/android_api/v1/upload_file_android_batch`
-                            console.log("APK安装请求URL:", url, "dbId:", dbId)
-                            Network.postForm(url)
-                            .add("db_ids", dbId)  // 实例ID列表，支持单个或多个（逗号分隔）
-                            .addFile("file", localPath)  // APK文件
-                            .setTimeout(3600000)
-                            .bind(root)
-                            .go(installApk)
-                        }
-                    } else if (lower.endsWith(".xapk")) {
-                        const hostIp = root.argument.hostIp || ""
-                        const dbId = root.argument.dbId || ""
-                        const serial = root.deviceSerial || ""
-                        console.log("开始安装XAPK，设备信息:", {hostIp, dbId, serial, fileName})
-                        if(hostIp && dbId){
-                            showLoading(qsTr("XAPK安装中..."))
-                            const url = `http://${hostIp}:18182/container_api/v1/install_xapk/${dbId}`
-                            console.log("XAPK安装请求URL:", url)
-                            Network.postForm(url)
-                            .addFile("file", localPath)
-                            .bind(root)
-                            .go(installXapk)
-                        }
-                    } else {
-                        console.warn("APK按钮选择了非APK/XAPK文件，忽略:", localPath)
-                        showError(qsTr("只能选择APK或XAPK文件"))
-                    }
+                                if (lower.endsWith(".apk") || lower.endsWith(".xapk")) {
+                                    const hostIp = root.argument.hostIp || ""
+                                    const dbId = root.argument.dbId || ""
+                                    const serial = root.deviceSerial || ""
+                                    console.log("开始安装APK，设备信息:", {hostIp, dbId, serial, fileName})
+                                    if(hostIp && dbId){
+                                        showLoading(qsTr("安装中..."))
+                                        // 使用新的批量安装APK接口
+                                        const url = `http://${hostIp}:18182/android_api/v1/upload_file_android_batch`
+                                        console.log("APK安装请求URL:", url, "dbId:", dbId)
+                                        Network.postForm(url)
+                                        .add("db_ids", dbId)  // 实例ID列表，支持单个或多个（逗号分隔）
+                                        .addFile("file", localPath)  // APK文件
+                                        .setTimeout(3600000)
+                                        .bind(root)
+                                        .go(installApk)
+                                    }
+                                } else {
+                                    console.warn("APK按钮选择了非APK/XAPK文件，忽略:", localPath)
+                                    showError(qsTr("只能选择APK或XAPK文件"))
+                                }
                             } else {
                                 // 导入按钮：所有文件（包括APK）都上传到云机，不执行安装
                                 const hostIp = root.argument.hostIp || ""
@@ -1000,48 +986,19 @@ FluWindow {
                                                  const fileName = localPath.split("/").pop()
                                                  console.log("拖拽文件名:", fileName, "文件类型:", lower)
 
-                                                 if (lower.endsWith(".apk")){
-                                                     if(root.deviceSerial){
-                                                         // 根据连接模式确定ADB设备地址
-                                                         let adbDeviceAddress = ""
-                                                         const networkMode = root.argument.networkMode || ""
-                                                         if (networkMode === "macvlan") {
-                                                             // Macvlan模式：使用 ip:5555 作为ADB设备地址
-                                                             const ip = root.argument.ip || ""
-                                                             if (ip) {
-                                                                 adbDeviceAddress = `${ip}:5555`
-                                                             }
-                                                         } else if (AppConfig.useDirectTcp) {
-                                                             // TCP直连模式：使用 hostIp:adb 作为ADB设备地址
-                                                             const hostIp = root.argument.hostIp || ""
-                                                             const adb = root.argument.adb || 0
-                                                             if (hostIp && adb > 0) {
-                                                                 adbDeviceAddress = `${hostIp}:${adb}`
-                                                             }
-                                                         }
-                                                         // 使用API方式安装APK
-                                                         const hostIp = root.argument.hostIp || ""
-                                                         const dbId = root.argument.dbId || ""
-                                                         if(hostIp && dbId){
-                                                             showLoading(qsTr("安装中..."))
-                                                             // 使用新的批量安装APK接口
-                                                             Network.postForm(`http://${hostIp}:18182/android_api/v1/upload_file_android_batch`)
-                                                             .add("db_ids", dbId)  // 实例ID列表，支持单个或多个（逗号分隔）
-                                                             .addFile("file", localPath)  // APK文件
-                                                             .setTimeout(3600000)
-                                                             .bind(root)
-                                                             .go(installApk)
-                                                         }
-                                                     }
-                                                 } else if (lower.endsWith(".xapk")){
+                                                 if (lower.endsWith(".apk") || lower.endsWith(".xapk")){
+                                                     // 使用API方式安装APK
                                                      const hostIp = root.argument.hostIp || ""
                                                      const dbId = root.argument.dbId || ""
                                                      if(hostIp && dbId){
-                                                         showLoading(qsTr("XAPK安装中..."))
-                                                         Network.postForm(`http://${hostIp}:18182/container_api/v1/install_xapk/${dbId}`)
-                                                         .addFile("file", localPath)
+                                                         showLoading(qsTr("安装中..."))
+                                                         // 使用新的批量安装APK接口
+                                                         Network.postForm(`http://${hostIp}:18182/android_api/v1/upload_file_android_batch`)
+                                                         .add("db_ids", dbId)  // 实例ID列表，支持单个或多个（逗号分隔）
+                                                         .addFile("file", localPath)  // APK文件
+                                                         .setTimeout(3600000)
                                                          .bind(root)
-                                                         .go(installXapk)
+                                                         .go(installApk)
                                                      }
                                                  } else {
                                                      const hostIp = root.argument.hostIp || ""
@@ -1052,7 +1009,7 @@ FluWindow {
                                                          Network.postForm(`http://${hostIp}:18182/android_api/v1/upload_file_android_upload`)
                                                          .add("db_ids", dbId)  // 实例ID列表，支持单个或多个（逗号分隔）
                                                          .addFile("file", localPath)  // 上传的文件
-                                                        //  .add("path", "/sdcard/Download")  // 可选，目标目录，默认 /storage/emulated/0/Download
+                                                         //  .add("path", "/sdcard/Download")  // 可选，目标目录，默认 /storage/emulated/0/Download
                                                          .bind(root)
                                                          .go(uploadFile)
                                                      }
@@ -2504,33 +2461,6 @@ FluWindow {
         onUploadProgress: (sent, total) => {
             const progress = Math.round((sent / total) * 100)
             console.log("APK安装进度:", progress + "%", sent, "/", total)
-        }
-    }
-    
-    NetworkCallable {
-        id: installXapk
-        onStart: {
-            showLoading(qsTr("XAPK安装中..."))
-        }
-        onFinish: {
-            hideLoading()
-        }
-        onError: (status, errorString, result, userData) => {
-            console.error("XAPK安装失败，状态:", status, "错误信息:", errorString)
-            showError(qsTr("XAPK安装失败") + ": " + errorString)
-        }
-        onSuccess: (result, userData) => {
-            console.log("XAPK安装成功，返回结果:", result)
-            const res = JSON.parse(result)
-            if(res.code === 200){
-                showSuccess(qsTr("XAPK安装成功"))
-            } else {
-                showError(res.msg || qsTr("XAPK安装失败"))
-            }
-        }
-        onUploadProgress: (sent, total) => {
-            const progress = Math.round((sent / total) * 100)
-            console.log("XAPK安装进度:", progress + "%", sent, "/", total)
         }
     }
     

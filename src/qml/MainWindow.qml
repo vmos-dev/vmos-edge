@@ -331,8 +331,8 @@ FluWindow {
 
     function validateName(name){
         name = name.trim()
-        if (name.length < 2 || name.length > 40) {
-            showError(qsTr("长度限制：2-40字符"))
+        if (name.length < 2 || name.length > 200) {
+            showError(qsTr("长度限制：2-200字符"))
             return ""
         }
         if (/[^a-zA-Z0-9_.-]/.test(name)) {
@@ -788,7 +788,7 @@ FluWindow {
                     return
                 }
                 renameDialog.title = qsTr("修改名称")
-                renameDialog.tips = qsTr("长度限制 2–40 个字符，仅允许使用 [a–zA–Z0–9_.-]，且首尾字符不得为[._-]")
+                renameDialog.tips = qsTr("长度限制 2–200 个字符，仅允许使用 [a–zA–Z0–9_.-]，且首尾字符不得为[._-]")
                 renameDialog.onPositiveClickListener = function(){
                     const name = validateName(renameDialog.inputName)
                     if(!name){
@@ -1364,7 +1364,7 @@ FluWindow {
                     text: modelData?.hostName ?? ""
                     font.pixelSize: 13
                     elide: Text.ElideRight
-                    Layout.maximumWidth: 100
+                    Layout.maximumWidth: 110
                 }
 
                 Text{
@@ -1679,7 +1679,7 @@ FluWindow {
             onClicked: {
                 renameDialog.title = qsTr("修改名称")
                 renameDialog.number = false
-                renameDialog.tips = qsTr("长度限制 2–40 个字符，仅允许使用 [a–zA–Z0–9_.-]，且首尾字符不得为[._-]")
+                renameDialog.tips = qsTr("长度限制 2–200 个字符，仅允许使用 [a–zA–Z0–9_.-]，且首尾字符不得为[._-]")
                 renameDialog.onPositiveClickListener = function(){
                     const name = validateName(renameDialog.inputName)
                     if(!name){
